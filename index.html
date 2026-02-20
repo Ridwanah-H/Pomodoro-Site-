@@ -457,6 +457,60 @@
     margin-top: 0.25rem;
   }
 
+  /* ── Ambient sounds ── */
+  .sound-bar {
+    display: flex;
+    gap: 0.4rem;
+    flex-wrap: wrap;
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1.5px solid var(--border);
+  }
+
+  .sound-btn {
+    flex: 1;
+    min-width: 60px;
+    border: 1.5px solid var(--border);
+    background: var(--bg);
+    border-radius: 10px;
+    padding: 0.45rem 0.4rem;
+    font-family: 'Nunito', sans-serif;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--muted);
+    cursor: pointer;
+    transition: all 0.18s;
+    text-align: center;
+  }
+
+  .sound-btn:hover { border-color: var(--warm2); color: var(--accent); }
+  .sound-btn.playing { background: var(--warm2); border-color: var(--warm); color: white; }
+
+  .volume-row {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    margin-top: 0.6rem;
+    padding: 0 0.1rem;
+  }
+
+  .volume-row label { font-size: 0.75rem; color: var(--muted); white-space: nowrap; }
+
+  .volume-row input[type=range] {
+    flex: 1;
+    accent-color: var(--warm);
+    cursor: pointer;
+  }
+
+  /* ── Confetti canvas ── */
+  #confettiCanvas {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    pointer-events: none;
+    z-index: 999;
+  }
+
   /* notifications */
   .toast {
     position: fixed;
@@ -490,7 +544,7 @@
   <p>one task at a time, one breath at a time</p>
   <div class="streak-bar">
     <div class="streak-pill">🔥 Streak <span id="streakCount">0</span> days</div>
-    <div class="streak-pill"> 🌸 Today <span id="todayPomos">0</span> pomodoros</div>
+    <div class="streak-pill">🍅 Today <span id="todayPomos">0</span> pomodoros</div>
     <div class="streak-pill">✅ Done <span id="doneTasks">0</span> tasks</div>
   </div>
 </header>
@@ -501,8 +555,8 @@
   <div class="card">
     <h2>⏱ Timer</h2>
     <div class="method-toggle">
-      <button class="method-btn active" id="methodPomodoro" onclick="setMethod('pomodoro')"> 🌸 Pomodoro</button>
-      <button class="method-btn" id="method5217" onclick="setMethod('5217')"> 🌺 52/17</button>
+      <button class="method-btn active" id="methodPomodoro" onclick="setMethod('pomodoro')">🍅 Pomodoro</button>
+      <button class="method-btn" id="method5217" onclick="setMethod('5217')">⚡ 52/17</button>
     </div>
     <div class="timer-modes" id="timerModes">
       <button class="mode-btn active" onclick="setMode('focus')">Focus 25m</button>
@@ -526,6 +580,16 @@
       <button class="btn btn-secondary" onclick="resetTimer()">Reset</button>
     </div>
     <div class="current-task-label" id="currentTaskLabel"></div>
+    <div class="sound-bar">
+      <button class="sound-btn" id="snd-rain" onclick="toggleSound('rain')">🌧 Rain</button>
+      <button class="sound-btn" id="cafe-ambience" onclick="toggleSound('cafe')">☕ Café</button>
+      <button class="sound-btn" id="snd-fire" onclick="toggleSound('fire')">🔥 Fire</button>
+      <button class="sound-btn" id="snd-forest" onclick="toggleSound('forest')">🌿 Forest</button>
+    </div>
+    <div class="volume-row">
+      <label>🔈 Volume</label>
+      <input type="range" min="0" max="1" step="0.05" value="0.4" id="volumeSlider" oninput="setVolume(this.value)">
+    </div>
   </div>
 
   <!-- Tasks -->
@@ -575,6 +639,7 @@
 
 </div>
 
+<canvas id="confettiCanvas"></canvas>
 <div class="toast" id="toast"></div>
 
 <script>
@@ -670,7 +735,7 @@ function startTimer() {
   interval = setInterval(tick, 1000);
   if (mode === 'focus' || mode === 'focus52') {
     const t = tasks.find(t => t.id === activeTaskId);
-    document.getElementById('timerLabel').textContent = t ? `Focusing on "${t.text}"  🌸` : (mode === 'focus52' ? 'Deep focus... 🔥' : 'Focusing...  🌸');
+    document.getElementById('timerLabel').textContent = t ? `Focusing on "${t.text}" 🍅` : (mode === 'focus52' ? 'Deep focus... 🔥' : 'Focusing... 🍅');
   }
 }
 
@@ -748,12 +813,13 @@ function timerComplete() {
 
     saveAll();
     renderAll();
-    showToast(' 🌸 Pomodoro complete! Take a break.');
+    showToast('Session complete! Take a break.');
     playDone();
+    launchConfetti();
     document.getElementById('timerLabel').textContent = 'Great work! 🌿';
   } else {
     showToast('☕ Break over! Ready to focus again?');
-    document.getElementById('timerLabel').textContent = 'Break done! Go focus  🌸';
+    document.getElementById('timerLabel').textContent = 'Break done! Go focus 🍅';
   }
 
   resetTimer();
@@ -795,6 +861,7 @@ function toggleTask(id) {
   if (t.done) {
     stats.completed++;
     showToast(`✅ "${t.text}" done!`);
+    launchConfetti();
   }
   saveAll();
   renderTasks();
@@ -838,7 +905,7 @@ function renderTasks() {
     <div class="task-item ${t.done ? 'done' : ''} ${activeTaskId === t.id ? 'active' : ''}" onclick="selectTask(${t.id})">
       <div class="task-check" onclick="event.stopPropagation();toggleTask(${t.id})"></div>
       <span class="task-text">${escHtml(t.text)}</span>
-      ${t.pomos > 0 ? `<span class="task-pomos"> 🌸×${t.pomos}</span>` : ''}
+      ${t.pomos > 0 ? `<span class="task-pomos">🍅×${t.pomos}</span>` : ''}
       <button class="task-del" onclick="event.stopPropagation();deleteTask(${t.id})">✕</button>
     </div>
   `).join('');
@@ -859,7 +926,7 @@ function renderHistory() {
     <div class="history-item">
       <span class="h-task">${escHtml(h.task)}</span>
       <span class="h-time">${h.time}</span>
-      <span class="h-type ${h.type !== 'focus' ? 'break' : ''}">${h.type === 'focus' ? ' 🌸' : '🌿'}</span>
+      <span class="h-type ${h.type !== 'focus' ? 'break' : ''}">${h.type === 'focus' ? '🍅' : '🌿'}</span>
     </div>
   `).join('');
 }
@@ -890,6 +957,158 @@ function renderAll() {
   renderHistory();
   updateStatsUI();
   updateTopStats();
+}
+
+// ── Ambient Sounds ──
+let audioCtx = null;
+let currentSound = null;
+let currentSoundName = null;
+let masterGain = null;
+
+function getAudioCtx() {
+  if (!audioCtx) {
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    masterGain = audioCtx.createGain();
+    masterGain.gain.value = parseFloat(document.getElementById('volumeSlider').value);
+    masterGain.connect(audioCtx.destination);
+  }
+  return audioCtx;
+}
+
+function setVolume(v) {
+  if (masterGain) masterGain.gain.value = parseFloat(v);
+}
+
+function toggleSound(name) {
+  if (currentSoundName === name) {
+    stopSound();
+    return;
+  }
+  stopSound();
+  startSound(name);
+}
+
+function stopSound() {
+  if (currentSound) {
+    try { currentSound.stop(); } catch(e) {}
+    currentSound = null;
+  }
+  if (currentSoundName) {
+    const el = document.getElementById('snd-' + currentSoundName);
+    if (el) el.classList.remove('playing');
+  }
+  currentSoundName = null;
+}
+
+function startSound(name) {
+  const ctx = getAudioCtx();
+  if (ctx.state === 'suspended') ctx.resume();
+
+  const btn = document.getElementById('snd-' + name);
+  if (btn) btn.classList.add('playing');
+  currentSoundName = name;
+
+  const bufferSize = ctx.sampleRate * 4; // 4 sec loop
+  const buffer = ctx.createBuffer(2, bufferSize, ctx.sampleRate);
+
+  for (let ch = 0; ch < 2; ch++) {
+    const data = buffer.getChannelData(ch);
+    if (name === 'rain') {
+      // white noise with slight low-pass feel
+      for (let i = 0; i < bufferSize; i++) data[i] = (Math.random() * 2 - 1) * 0.6;
+    } else if (name === 'cafe') {
+      // layered gentle noise bursts simulating murmur
+      for (let i = 0; i < bufferSize; i++) {
+        const t = i / ctx.sampleRate;
+        data[i] = (Math.random() * 2 - 1) * 0.25 * (0.5 + 0.5 * Math.sin(2 * Math.PI * 0.3 * t));
+      }
+    } else if (name === 'fire') {
+      // low rumble crackling
+      for (let i = 0; i < bufferSize; i++) {
+        const crackle = Math.random() < 0.002 ? (Math.random() * 2 - 1) * 2 : 0;
+        data[i] = ((Math.random() * 2 - 1) * 0.15 + crackle) * 0.7;
+      }
+    } else if (name === 'forest') {
+      // soft wind noise
+      for (let i = 0; i < bufferSize; i++) {
+        const t = i / ctx.sampleRate;
+        data[i] = (Math.random() * 2 - 1) * 0.2 * (0.7 + 0.3 * Math.sin(2 * Math.PI * 0.1 * t));
+      }
+    }
+  }
+
+  // Apply filter to shape the sound
+  const filter = ctx.createBiquadFilter();
+  if (name === 'rain') { filter.type = 'bandpass'; filter.frequency.value = 1800; filter.Q.value = 0.5; }
+  else if (name === 'cafe') { filter.type = 'lowpass'; filter.frequency.value = 800; }
+  else if (name === 'fire') { filter.type = 'lowpass'; filter.frequency.value = 400; }
+  else if (name === 'forest') { filter.type = 'lowpass'; filter.frequency.value = 600; }
+
+  const source = ctx.createBufferSource();
+  source.buffer = buffer;
+  source.loop = true;
+  source.connect(filter);
+  filter.connect(masterGain);
+  source.start();
+  currentSound = source;
+
+  source.onended = () => {
+    if (currentSoundName === name) currentSoundName = null;
+    if (btn) btn.classList.remove('playing');
+  };
+}
+
+// ── Confetti ──
+const canvas = document.getElementById('confettiCanvas');
+const ctx2d = canvas.getContext('2d');
+let confettiPieces = [];
+let confettiFrame = null;
+
+const CONFETTI_COLORS = ['#c4895a','#e8b48a','#7a9e7e','#c97b6e','#f5c97a','#8b6f47','#d4b896'];
+
+function launchConfetti() {
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+  confettiPieces = [];
+  for (let i = 0; i < 120; i++) {
+    confettiPieces.push({
+      x: Math.random() * canvas.width,
+      y: -10 - Math.random() * 200,
+      w: 6 + Math.random() * 8,
+      h: 10 + Math.random() * 6,
+      color: CONFETTI_COLORS[Math.floor(Math.random() * CONFETTI_COLORS.length)],
+      rotation: Math.random() * Math.PI * 2,
+      rotSpeed: (Math.random() - 0.5) * 0.2,
+      vx: (Math.random() - 0.5) * 3,
+      vy: 2 + Math.random() * 3,
+      opacity: 1
+    });
+  }
+  if (confettiFrame) cancelAnimationFrame(confettiFrame);
+  animateConfetti();
+}
+
+function animateConfetti() {
+  ctx2d.clearRect(0, 0, canvas.width, canvas.height);
+  confettiPieces = confettiPieces.filter(p => p.opacity > 0.05);
+  confettiPieces.forEach(p => {
+    p.x += p.vx;
+    p.y += p.vy;
+    p.rotation += p.rotSpeed;
+    if (p.y > canvas.height * 0.7) p.opacity -= 0.02;
+    ctx2d.save();
+    ctx2d.globalAlpha = p.opacity;
+    ctx2d.translate(p.x, p.y);
+    ctx2d.rotate(p.rotation);
+    ctx2d.fillStyle = p.color;
+    ctx2d.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
+    ctx2d.restore();
+  });
+  if (confettiPieces.length > 0) {
+    confettiFrame = requestAnimationFrame(animateConfetti);
+  } else {
+    ctx2d.clearRect(0, 0, canvas.width, canvas.height);
+  }
 }
 
 // ── Init ──
