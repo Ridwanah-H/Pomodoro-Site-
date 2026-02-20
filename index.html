@@ -490,7 +490,7 @@
   <p>one task at a time, one breath at a time</p>
   <div class="streak-bar">
     <div class="streak-pill">🔥 Streak <span id="streakCount">0</span> days</div>
-    <div class="streak-pill">🍅 Today <span id="todayPomos">0</span> pomodoros</div>
+    <div class="streak-pill"> 🌸 Today <span id="todayPomos">0</span> pomodoros</div>
     <div class="streak-pill">✅ Done <span id="doneTasks">0</span> tasks</div>
   </div>
 </header>
@@ -501,8 +501,8 @@
   <div class="card">
     <h2>⏱ Timer</h2>
     <div class="method-toggle">
-      <button class="method-btn active" id="methodPomodoro" onclick="setMethod('pomodoro')">🍅 Pomodoro</button>
-      <button class="method-btn" id="method5217" onclick="setMethod('5217')">⚡ 52/17</button>
+      <button class="method-btn active" id="methodPomodoro" onclick="setMethod('pomodoro')"> 🌸 Pomodoro</button>
+      <button class="method-btn" id="method5217" onclick="setMethod('5217')"> 🌺 52/17</button>
     </div>
     <div class="timer-modes" id="timerModes">
       <button class="mode-btn active" onclick="setMode('focus')">Focus 25m</button>
@@ -670,7 +670,7 @@ function startTimer() {
   interval = setInterval(tick, 1000);
   if (mode === 'focus' || mode === 'focus52') {
     const t = tasks.find(t => t.id === activeTaskId);
-    document.getElementById('timerLabel').textContent = t ? `Focusing on "${t.text}" 🍅` : (mode === 'focus52' ? 'Deep focus... 🔥' : 'Focusing... 🍅');
+    document.getElementById('timerLabel').textContent = t ? `Focusing on "${t.text}"  🌸` : (mode === 'focus52' ? 'Deep focus... 🔥' : 'Focusing...  🌸');
   }
 }
 
@@ -748,12 +748,12 @@ function timerComplete() {
 
     saveAll();
     renderAll();
-    showToast('🍅 Pomodoro complete! Take a break.');
+    showToast(' 🌸 Pomodoro complete! Take a break.');
     playDone();
     document.getElementById('timerLabel').textContent = 'Great work! 🌿';
   } else {
     showToast('☕ Break over! Ready to focus again?');
-    document.getElementById('timerLabel').textContent = 'Break done! Go focus 🍅';
+    document.getElementById('timerLabel').textContent = 'Break done! Go focus  🌸';
   }
 
   resetTimer();
@@ -838,7 +838,7 @@ function renderTasks() {
     <div class="task-item ${t.done ? 'done' : ''} ${activeTaskId === t.id ? 'active' : ''}" onclick="selectTask(${t.id})">
       <div class="task-check" onclick="event.stopPropagation();toggleTask(${t.id})"></div>
       <span class="task-text">${escHtml(t.text)}</span>
-      ${t.pomos > 0 ? `<span class="task-pomos">🍅×${t.pomos}</span>` : ''}
+      ${t.pomos > 0 ? `<span class="task-pomos"> 🌸×${t.pomos}</span>` : ''}
       <button class="task-del" onclick="event.stopPropagation();deleteTask(${t.id})">✕</button>
     </div>
   `).join('');
@@ -859,7 +859,7 @@ function renderHistory() {
     <div class="history-item">
       <span class="h-task">${escHtml(h.task)}</span>
       <span class="h-time">${h.time}</span>
-      <span class="h-type ${h.type !== 'focus' ? 'break' : ''}">${h.type === 'focus' ? '🍅' : '🌿'}</span>
+      <span class="h-type ${h.type !== 'focus' ? 'break' : ''}">${h.type === 'focus' ? ' 🌸' : '🌿'}</span>
     </div>
   `).join('');
 }
