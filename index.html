@@ -843,50 +843,19 @@ function addTask() {
 }
 
 function toggleTask(id) {
-  const t = tasks.find(t => t.id === id);
-  if (!t) return;
-  if (t.done) {
-    t.done = false;
-    stats.completed = Math.max(0, stats.completed - 1);
-    saveAll();
-    renderTasks();
-    updateTopStats();
-    updateStatsUI();
-    return;
-  }
-  // mark done
-  t.done = true;
+  const idx = tasks.findIndex(t => t.id === id);
+  if (idx === -1) return;
   stats.completed++;
-  showToast(`✅ "${t.text}" done!`);
+  showToast(`✅ "${tasks[idx].text}" done!`);
+  tasks.splice(idx, 1);
+  if (activeTaskId === id) {
+    activeTaskId = null;
+    document.getElementById('currentTaskLabel').innerHTML = '';
+  }
   saveAll();
+  renderTasks();
   updateTopStats();
   updateStatsUI();
-  // animate out then remove
-  const el = document.querySelector(`.task-item[data-id="${id}"]`);
-  if (el) {
-    el.style.transition = 'opacity 0.4s, transform 0.4s';
-    el.style.opacity = '0';
-    el.style.transform = 'translateX(30px)';
-    setTimeout(() => {
-      tasks = tasks.filter(t => t.id !== id);
-      if (activeTaskId === id) {
-        activeTaskId = null;
-        document.getElementById('currentTaskLabel').innerHTML = '';
-      }
-      saveAll();
-      renderTasks();
-      updateTopStats();
-    }, 420);
-  } else {
-    tasks = tasks.filter(t => t.id !== id);
-    if (activeTaskId === id) {
-      activeTaskId = null;
-      document.getElementById('currentTaskLabel').innerHTML = '';
-    }
-    saveAll();
-    renderTasks();
-    updateTopStats();
-  }
 }
 
 function selectTask(id) {
