@@ -1,0 +1,840 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cozy Focus</title>
+<link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,600;1,400&family=Nunito:wght@300;400;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f5efe6;
+    --bg2: #ede3d6;
+    --card: #fdf8f2;
+    --warm: #c4895a;
+    --warm2: #e8b48a;
+    --accent: #8b6f47;
+    --green: #7a9e7e;
+    --red: #c97b6e;
+    --text: #3d2b1f;
+    --muted: #9c7e6a;
+    --border: #ddd0c0;
+    --shadow: 0 4px 24px rgba(100,60,20,0.10);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Nunito', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    background-image:
+      radial-gradient(ellipse at 20% 20%, rgba(196,137,90,0.10) 0%, transparent 60%),
+      radial-gradient(ellipse at 80% 80%, rgba(122,158,126,0.10) 0%, transparent 60%);
+  }
+
+  header {
+    text-align: center;
+    padding: 2.5rem 1rem 1rem;
+  }
+
+  header h1 {
+    font-family: 'Lora', serif;
+    font-size: 2.2rem;
+    color: var(--accent);
+    letter-spacing: -0.5px;
+  }
+
+  header p {
+    color: var(--muted);
+    font-size: 0.9rem;
+    margin-top: 0.3rem;
+    font-style: italic;
+  }
+
+  .streak-bar {
+    display: flex;
+    justify-content: center;
+    gap: 0.5rem;
+    margin: 0.8rem 0 0;
+    flex-wrap: wrap;
+  }
+
+  .streak-pill {
+    background: var(--card);
+    border: 1.5px solid var(--border);
+    border-radius: 20px;
+    padding: 0.3rem 0.9rem;
+    font-size: 0.8rem;
+    color: var(--muted);
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+  }
+
+  .streak-pill span { font-weight: 600; color: var(--warm); }
+
+  .main {
+    max-width: 900px;
+    margin: 1.5rem auto;
+    padding: 0 1rem 3rem;
+    display: grid;
+    grid-template-columns: 1fr 1.2fr;
+    gap: 1.5rem;
+    align-items: start;
+  }
+
+  @media (max-width: 680px) {
+    .main { grid-template-columns: 1fr; }
+  }
+
+  .card {
+    background: var(--card);
+    border: 1.5px solid var(--border);
+    border-radius: 20px;
+    padding: 1.5rem;
+    box-shadow: var(--shadow);
+  }
+
+  .card h2 {
+    font-family: 'Lora', serif;
+    font-size: 1.1rem;
+    color: var(--accent);
+    margin-bottom: 1.2rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  /* ── Timer ── */
+  .timer-modes {
+    display: flex;
+    gap: 0.4rem;
+    margin-bottom: 1.4rem;
+    background: var(--bg2);
+    border-radius: 12px;
+    padding: 4px;
+  }
+
+  .mode-btn {
+    flex: 1;
+    border: none;
+    background: transparent;
+    border-radius: 9px;
+    padding: 0.45rem 0.5rem;
+    font-family: 'Nunito', sans-serif;
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--muted);
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .mode-btn.active {
+    background: var(--card);
+    color: var(--accent);
+    box-shadow: 0 2px 8px rgba(100,60,20,0.12);
+  }
+
+  .timer-display {
+    text-align: center;
+    margin: 0.5rem 0 1.5rem;
+    position: relative;
+  }
+
+  .timer-ring {
+    position: relative;
+    width: 170px;
+    height: 170px;
+    margin: 0 auto 1rem;
+  }
+
+  .timer-ring svg {
+    transform: rotate(-90deg);
+    position: absolute;
+    top: 0; left: 0;
+  }
+
+  .timer-ring-bg { fill: none; stroke: var(--bg2); stroke-width: 8; }
+  .timer-ring-fill {
+    fill: none;
+    stroke: var(--warm);
+    stroke-width: 8;
+    stroke-linecap: round;
+    transition: stroke-dashoffset 1s linear;
+  }
+
+  .timer-time {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    font-family: 'Lora', serif;
+    font-size: 2.6rem;
+    color: var(--accent);
+    font-weight: 600;
+    letter-spacing: 1px;
+  }
+
+  .timer-label {
+    font-size: 0.78rem;
+    color: var(--muted);
+    text-align: center;
+    margin-bottom: 1rem;
+    font-style: italic;
+  }
+
+  .timer-controls {
+    display: flex;
+    gap: 0.6rem;
+    justify-content: center;
+  }
+
+  .btn {
+    border: none;
+    border-radius: 12px;
+    padding: 0.65rem 1.6rem;
+    font-family: 'Nunito', sans-serif;
+    font-weight: 600;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: all 0.18s;
+  }
+
+  .btn-primary {
+    background: var(--warm);
+    color: white;
+    box-shadow: 0 3px 12px rgba(196,137,90,0.35);
+  }
+
+  .btn-primary:hover { background: var(--accent); transform: translateY(-1px); }
+
+  .btn-secondary {
+    background: var(--bg2);
+    color: var(--muted);
+  }
+
+  .btn-secondary:hover { background: var(--border); color: var(--accent); }
+
+  .current-task-label {
+    text-align: center;
+    font-size: 0.82rem;
+    color: var(--muted);
+    margin-top: 1rem;
+    min-height: 1.2em;
+    font-style: italic;
+  }
+
+  .current-task-label b { color: var(--accent); font-style: normal; }
+
+  /* ── Tasks ── */
+  .task-input-row {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+  }
+
+  .task-input-row input {
+    flex: 1;
+    border: 1.5px solid var(--border);
+    border-radius: 10px;
+    padding: 0.55rem 0.8rem;
+    font-family: 'Nunito', sans-serif;
+    font-size: 0.88rem;
+    background: var(--bg);
+    color: var(--text);
+    outline: none;
+    transition: border-color 0.2s;
+  }
+
+  .task-input-row input:focus { border-color: var(--warm2); }
+  .task-input-row input::placeholder { color: var(--muted); opacity: 0.7; }
+
+  .btn-add {
+    background: var(--warm);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    padding: 0.55rem 1rem;
+    font-size: 1.2rem;
+    cursor: pointer;
+    transition: background 0.18s;
+    line-height: 1;
+  }
+
+  .btn-add:hover { background: var(--accent); }
+
+  .task-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    max-height: 280px;
+    overflow-y: auto;
+    padding-right: 4px;
+  }
+
+  .task-list::-webkit-scrollbar { width: 4px; }
+  .task-list::-webkit-scrollbar-track { background: transparent; }
+  .task-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+  .task-item {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    background: var(--bg);
+    border: 1.5px solid var(--border);
+    border-radius: 11px;
+    padding: 0.55rem 0.7rem;
+    cursor: pointer;
+    transition: all 0.18s;
+    animation: slideIn 0.2s ease;
+  }
+
+  @keyframes slideIn {
+    from { opacity: 0; transform: translateY(-6px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .task-item:hover { border-color: var(--warm2); }
+  .task-item.active { border-color: var(--warm); background: #fff8f0; }
+
+  .task-check {
+    width: 18px; height: 18px;
+    border: 2px solid var(--border);
+    border-radius: 50%;
+    flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.18s;
+    font-size: 0.7rem;
+    color: white;
+  }
+
+  .task-item.done .task-check { background: var(--green); border-color: var(--green); }
+  .task-item.done .task-check::after { content: '✓'; }
+  .task-item.active .task-check { border-color: var(--warm); }
+
+  .task-text {
+    flex: 1;
+    font-size: 0.88rem;
+    transition: all 0.18s;
+  }
+
+  .task-item.done .task-text {
+    text-decoration: line-through;
+    color: var(--muted);
+  }
+
+  .task-pomos {
+    font-size: 0.72rem;
+    color: var(--muted);
+    display: flex;
+    align-items: center;
+    gap: 2px;
+  }
+
+  .task-del {
+    background: none; border: none;
+    color: var(--border);
+    cursor: pointer;
+    font-size: 1rem;
+    padding: 2px 4px;
+    border-radius: 6px;
+    transition: color 0.15s;
+    line-height: 1;
+  }
+
+  .task-del:hover { color: var(--red); }
+
+  .empty-tasks {
+    text-align: center;
+    color: var(--muted);
+    font-size: 0.85rem;
+    padding: 2rem 0;
+    font-style: italic;
+  }
+
+  /* ── Bottom row ── */
+  .bottom-row {
+    grid-column: 1 / -1;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+  }
+
+  @media (max-width: 680px) {
+    .bottom-row { grid-template-columns: 1fr; }
+  }
+
+  /* ── History ── */
+  .history-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    max-height: 200px;
+    overflow-y: auto;
+  }
+
+  .history-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.5rem 0.7rem;
+    background: var(--bg);
+    border-radius: 10px;
+    font-size: 0.82rem;
+    border: 1px solid var(--border);
+    animation: slideIn 0.2s ease;
+  }
+
+  .history-item .h-task { color: var(--accent); font-weight: 600; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .history-item .h-time { color: var(--muted); font-size: 0.75rem; white-space: nowrap; margin-left: 0.6rem; }
+  .history-item .h-type { font-size: 0.72rem; background: var(--warm2); color: white; border-radius: 6px; padding: 1px 6px; margin-left: 0.4rem; }
+  .history-item .h-type.break { background: var(--green); }
+
+  .empty-history {
+    text-align: center;
+    color: var(--muted);
+    font-size: 0.85rem;
+    padding: 1.5rem 0;
+    font-style: italic;
+  }
+
+  /* ── Stats ── */
+  .stats-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.7rem;
+  }
+
+  .stat-box {
+    background: var(--bg);
+    border: 1.5px solid var(--border);
+    border-radius: 13px;
+    padding: 0.9rem 0.8rem;
+    text-align: center;
+  }
+
+  .stat-val {
+    font-family: 'Lora', serif;
+    font-size: 1.7rem;
+    color: var(--warm);
+    font-weight: 600;
+    line-height: 1;
+  }
+
+  .stat-lbl {
+    font-size: 0.73rem;
+    color: var(--muted);
+    margin-top: 0.25rem;
+  }
+
+  /* notifications */
+  .toast {
+    position: fixed;
+    bottom: 2rem;
+    left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    background: var(--accent);
+    color: white;
+    padding: 0.7rem 1.5rem;
+    border-radius: 20px;
+    font-size: 0.88rem;
+    font-family: 'Nunito', sans-serif;
+    box-shadow: var(--shadow);
+    opacity: 0;
+    transition: all 0.3s;
+    pointer-events: none;
+    z-index: 100;
+    white-space: nowrap;
+  }
+
+  .toast.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>🍵 Cozy Focus</h1>
+  <p>one task at a time, one breath at a time</p>
+  <div class="streak-bar">
+    <div class="streak-pill">🔥 Streak <span id="streakCount">0</span> days</div>
+    <div class="streak-pill">🍅 Today <span id="todayPomos">0</span> pomodoros</div>
+    <div class="streak-pill">✅ Done <span id="doneTasks">0</span> tasks</div>
+  </div>
+</header>
+
+<div class="main">
+
+  <!-- Timer -->
+  <div class="card">
+    <h2>⏱ Timer</h2>
+    <div class="timer-modes">
+      <button class="mode-btn active" onclick="setMode('focus')">Focus 25m</button>
+      <button class="mode-btn" onclick="setMode('short')">Short 5m</button>
+      <button class="mode-btn" onclick="setMode('long')">Long 15m</button>
+    </div>
+    <div class="timer-display">
+      <div class="timer-ring">
+        <svg width="170" height="170" viewBox="0 0 170 170">
+          <circle class="timer-ring-bg" cx="85" cy="85" r="75"/>
+          <circle class="timer-ring-fill" id="timerRing" cx="85" cy="85" r="75"
+            stroke-dasharray="471"
+            stroke-dashoffset="0"/>
+        </svg>
+        <div class="timer-time" id="timerDisplay">25:00</div>
+      </div>
+    </div>
+    <p class="timer-label" id="timerLabel">Ready to focus?</p>
+    <div class="timer-controls">
+      <button class="btn btn-primary" id="startBtn" onclick="toggleTimer()">Start</button>
+      <button class="btn btn-secondary" onclick="resetTimer()">Reset</button>
+    </div>
+    <div class="current-task-label" id="currentTaskLabel"></div>
+  </div>
+
+  <!-- Tasks -->
+  <div class="card">
+    <h2>📋 Tasks</h2>
+    <div class="task-input-row">
+      <input type="text" id="taskInput" placeholder="What do you want to work on?" onkeydown="if(event.key==='Enter')addTask()">
+      <button class="btn-add" onclick="addTask()">+</button>
+    </div>
+    <div class="task-list" id="taskList">
+      <div class="empty-tasks" id="emptyTasksMsg">No tasks yet — add one above ☁️</div>
+    </div>
+  </div>
+
+  <div class="bottom-row">
+    <!-- Session History -->
+    <div class="card">
+      <h2>📖 Session History</h2>
+      <div class="history-list" id="historyList">
+        <div class="empty-history">No sessions yet — start your first focus! 🌱</div>
+      </div>
+    </div>
+
+    <!-- Stats -->
+    <div class="card">
+      <h2>📊 Stats</h2>
+      <div class="stats-grid">
+        <div class="stat-box">
+          <div class="stat-val" id="statTotal">0</div>
+          <div class="stat-lbl">Total Pomodoros</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-val" id="statFocusMin">0</div>
+          <div class="stat-lbl">Focus Minutes</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-val" id="statCompleted">0</div>
+          <div class="stat-lbl">Tasks Completed</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-val" id="statStreak">0</div>
+          <div class="stat-lbl">Day Streak 🔥</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ── State ──
+const MODES = { focus: 25*60, short: 5*60, long: 15*60 };
+const CIRCUMFERENCE = 471;
+
+let mode = 'focus';
+let totalTime = MODES.focus;
+let timeLeft = totalTime;
+let running = false;
+let interval = null;
+let activeTaskId = null;
+
+// Load from localStorage
+let tasks = JSON.parse(localStorage.getItem('cf_tasks') || '[]');
+let history = JSON.parse(localStorage.getItem('cf_history') || '[]');
+let stats = JSON.parse(localStorage.getItem('cf_stats') || '{"total":0,"focusMin":0,"completed":0}');
+let streak = JSON.parse(localStorage.getItem('cf_streak') || '{"count":0,"lastDate":""}');
+let todayPomos = parseInt(localStorage.getItem('cf_todayPomos') || '0');
+
+// Check if today's date differs — reset todayPomos if new day
+const today = new Date().toDateString();
+const lastSaved = localStorage.getItem('cf_lastDate');
+if (lastSaved !== today) {
+  todayPomos = 0;
+  localStorage.setItem('cf_todayPomos', '0');
+  localStorage.setItem('cf_lastDate', today);
+}
+
+// ── Streak logic ──
+function updateStreak() {
+  const todayStr = new Date().toDateString();
+  const yesterday = new Date(Date.now() - 86400000).toDateString();
+  if (streak.lastDate === todayStr) return;
+  if (streak.lastDate === yesterday) {
+    streak.count++;
+  } else if (streak.lastDate !== todayStr) {
+    streak.count = 1;
+  }
+  streak.lastDate = todayStr;
+  localStorage.setItem('cf_streak', JSON.stringify(streak));
+}
+
+// ── Timer ──
+function setMode(m) {
+  if (running) return;
+  mode = m;
+  totalTime = MODES[m];
+  timeLeft = totalTime;
+  document.querySelectorAll('.mode-btn').forEach((b, i) => {
+    b.classList.toggle('active', ['focus','short','long'][i] === m);
+  });
+  updateTimerUI();
+  document.getElementById('timerLabel').textContent = m === 'focus' ? 'Ready to focus?' : m === 'short' ? 'Short break 🌿' : 'Long break ☕';
+}
+
+function toggleTimer() {
+  if (running) {
+    pauseTimer();
+  } else {
+    startTimer();
+  }
+}
+
+function startTimer() {
+  running = true;
+  document.getElementById('startBtn').textContent = 'Pause';
+  interval = setInterval(tick, 1000);
+  if (mode === 'focus') {
+    const t = tasks.find(t => t.id === activeTaskId);
+    document.getElementById('timerLabel').textContent = t ? `Focusing on "${t.text}" 🍅` : 'Focusing... 🍅';
+  }
+}
+
+function pauseTimer() {
+  running = false;
+  clearInterval(interval);
+  document.getElementById('startBtn').textContent = 'Resume';
+  document.getElementById('timerLabel').textContent = 'Paused ☁️';
+}
+
+function resetTimer() {
+  running = false;
+  clearInterval(interval);
+  timeLeft = totalTime;
+  document.getElementById('startBtn').textContent = 'Start';
+  updateTimerUI();
+  document.getElementById('timerLabel').textContent = mode === 'focus' ? 'Ready to focus?' : mode === 'short' ? 'Short break 🌿' : 'Long break ☕';
+}
+
+function tick() {
+  if (timeLeft <= 0) {
+    timerComplete();
+    return;
+  }
+  timeLeft--;
+  updateTimerUI();
+}
+
+function updateTimerUI() {
+  const m = Math.floor(timeLeft / 60);
+  const s = timeLeft % 60;
+  document.getElementById('timerDisplay').textContent = `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+  const progress = timeLeft / totalTime;
+  const offset = CIRCUMFERENCE * progress;
+  document.getElementById('timerRing').style.strokeDashoffset = offset;
+  // color shift as time runs out
+  if (mode === 'focus') {
+    const hue = progress > 0.5 ? '#c4895a' : progress > 0.25 ? '#d4854a' : '#c97b6e';
+    document.getElementById('timerRing').style.stroke = hue;
+  } else {
+    document.getElementById('timerRing').style.stroke = '#7a9e7e';
+  }
+}
+
+function timerComplete() {
+  clearInterval(interval);
+  running = false;
+  document.getElementById('startBtn').textContent = 'Start';
+
+  if (mode === 'focus') {
+    stats.total++;
+    stats.focusMin += 25;
+    todayPomos++;
+    localStorage.setItem('cf_todayPomos', todayPomos);
+    updateStreak();
+
+    // Log history
+    const t = tasks.find(t => t.id === activeTaskId);
+    const entry = {
+      type: 'focus',
+      task: t ? t.text : 'Free focus',
+      time: new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}),
+      date: new Date().toDateString()
+    };
+    history.unshift(entry);
+    if (history.length > 50) history.pop();
+
+    // Increment task pomodoros
+    if (activeTaskId) {
+      const taskIdx = tasks.findIndex(t => t.id === activeTaskId);
+      if (taskIdx > -1) tasks[taskIdx].pomos = (tasks[taskIdx].pomos || 0) + 1;
+    }
+
+    saveAll();
+    renderAll();
+    showToast('🍅 Pomodoro complete! Take a break.');
+    playDone();
+    document.getElementById('timerLabel').textContent = 'Great work! 🌿';
+  } else {
+    showToast('☕ Break over! Ready to focus again?');
+    document.getElementById('timerLabel').textContent = 'Break done! Go focus 🍅';
+  }
+
+  resetTimer();
+}
+
+function playDone() {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    [523, 659, 784].forEach((freq, i) => {
+      const o = ctx.createOscillator();
+      const g = ctx.createGain();
+      o.connect(g); g.connect(ctx.destination);
+      o.frequency.value = freq;
+      o.type = 'sine';
+      g.gain.setValueAtTime(0, ctx.currentTime + i * 0.18);
+      g.gain.linearRampToValueAtTime(0.2, ctx.currentTime + i * 0.18 + 0.05);
+      g.gain.linearRampToValueAtTime(0, ctx.currentTime + i * 0.18 + 0.4);
+      o.start(ctx.currentTime + i * 0.18);
+      o.stop(ctx.currentTime + i * 0.18 + 0.5);
+    });
+  } catch(e) {}
+}
+
+// ── Tasks ──
+function addTask() {
+  const input = document.getElementById('taskInput');
+  const text = input.value.trim();
+  if (!text) return;
+  tasks.push({ id: Date.now(), text, done: false, pomos: 0 });
+  input.value = '';
+  saveAll();
+  renderTasks();
+}
+
+function toggleTask(id) {
+  const t = tasks.find(t => t.id === id);
+  if (!t) return;
+  t.done = !t.done;
+  if (t.done) {
+    stats.completed++;
+    showToast(`✅ "${t.text}" done!`);
+  }
+  saveAll();
+  renderTasks();
+  updateTopStats();
+  updateStatsUI();
+}
+
+function selectTask(id) {
+  if (running) return;
+  activeTaskId = activeTaskId === id ? null : id;
+  renderTasks();
+  const t = tasks.find(t => t.id === id);
+  const el = document.getElementById('currentTaskLabel');
+  el.innerHTML = activeTaskId && t ? `Working on: <b>${t.text}</b>` : '';
+}
+
+function deleteTask(id) {
+  tasks = tasks.filter(t => t.id !== id);
+  if (activeTaskId === id) {
+    activeTaskId = null;
+    document.getElementById('currentTaskLabel').innerHTML = '';
+  }
+  saveAll();
+  renderTasks();
+}
+
+function renderTasks() {
+  const list = document.getElementById('taskList');
+  const empty = document.getElementById('emptyTasksMsg');
+  const pending = tasks.filter(t => !t.done);
+  const done = tasks.filter(t => t.done);
+  const all = [...pending, ...done];
+
+  if (all.length === 0) {
+    list.innerHTML = '';
+    list.appendChild(empty);
+    return;
+  }
+
+  list.innerHTML = all.map(t => `
+    <div class="task-item ${t.done ? 'done' : ''} ${activeTaskId === t.id ? 'active' : ''}" onclick="selectTask(${t.id})">
+      <div class="task-check" onclick="event.stopPropagation();toggleTask(${t.id})"></div>
+      <span class="task-text">${escHtml(t.text)}</span>
+      ${t.pomos > 0 ? `<span class="task-pomos">🍅×${t.pomos}</span>` : ''}
+      <button class="task-del" onclick="event.stopPropagation();deleteTask(${t.id})">✕</button>
+    </div>
+  `).join('');
+}
+
+function escHtml(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+// ── History ──
+function renderHistory() {
+  const list = document.getElementById('historyList');
+  if (history.length === 0) {
+    list.innerHTML = '<div class="empty-history">No sessions yet — start your first focus! 🌱</div>';
+    return;
+  }
+  list.innerHTML = history.slice(0, 20).map(h => `
+    <div class="history-item">
+      <span class="h-task">${escHtml(h.task)}</span>
+      <span class="h-time">${h.time}</span>
+      <span class="h-type ${h.type !== 'focus' ? 'break' : ''}">${h.type === 'focus' ? '🍅' : '🌿'}</span>
+    </div>
+  `).join('');
+}
+
+// ── Stats UI ──
+function updateStatsUI() {
+  document.getElementById('statTotal').textContent = stats.total;
+  document.getElementById('statFocusMin').textContent = stats.focusMin;
+  document.getElementById('statCompleted').textContent = stats.completed;
+  document.getElementById('statStreak').textContent = streak.count;
+}
+
+function updateTopStats() {
+  document.getElementById('streakCount').textContent = streak.count;
+  document.getElementById('todayPomos').textContent = todayPomos;
+  document.getElementById('doneTasks').textContent = tasks.filter(t => t.done).length;
+}
+
+// ── Persist ──
+function saveAll() {
+  localStorage.setItem('cf_tasks', JSON.stringify(tasks));
+  localStorage.setItem('cf_history', JSON.stringify(history));
+  localStorage.setItem('cf_stats', JSON.stringify(stats));
+}
+
+function renderAll() {
+  renderTasks();
+  renderHistory();
+  updateStatsUI();
+  updateTopStats();
+}
+
+// ── Init ──
+renderAll();
+updateTimerUI();
+</script>
+</body>
+</html>
