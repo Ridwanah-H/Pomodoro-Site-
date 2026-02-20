@@ -582,7 +582,7 @@
     <div class="current-task-label" id="currentTaskLabel"></div>
     <div class="sound-bar">
       <button class="sound-btn" id="snd-rain" onclick="toggleSound('rain')">🌧 Rain</button>
-      <button class="sound-btn" id="cafe-ambience" onclick="toggleSound('cafe')">☕ Café</button>
+      <button class="sound-btn" id="snd-cafe" onclick="toggleSound('cafe')">☕ Café</button>
       <button class="sound-btn" id="snd-fire" onclick="toggleSound('fire')">🔥 Fire</button>
       <button class="sound-btn" id="snd-forest" onclick="toggleSound('forest')">🌿 Forest</button>
     </div>
@@ -857,16 +857,45 @@ function addTask() {
 function toggleTask(id) {
   const t = tasks.find(t => t.id === id);
   if (!t) return;
-  t.done = !t.done;
   if (t.done) {
-    stats.completed++;
-    showToast(`✅ "${t.text}" done!`);
-    launchConfetti();
+    // uncomplete it
+    t.done = false;
+    stats.completed = Math.max(0, stats.completed - 1);
+    saveAll();
+    renderTasks();
+    updateTopStats();
+    updateStatsUI();
+    return;
   }
+  // mark done — show confetti then remove after short delay
+  t.done = true;
+  stats.completed++;
+  showToast(`✅ "${t.text}" done!`);
+  launchConfetti();
   saveAll();
-  renderTasks();
   updateTopStats();
   updateStatsUI();
+  // animate out then remove
+  const el = document.querySelector(`.task-item[onclick="selectTask(${id})"]`);
+  if (el) {
+    el.style.transition = 'opacity 0.4s, transform 0.4s';
+    el.style.opacity = '0';
+    el.style.transform = 'translateX(30px)';
+    setTimeout(() => {
+      tasks = tasks.filter(t => t.id !== id);
+      if (activeTaskId === id) {
+        activeTaskId = null;
+        document.getElementById('currentTaskLabel').innerHTML = '';
+      }
+      saveAll();
+      renderTasks();
+      updateTopStats();
+    }, 420);
+  } else {
+    tasks = tasks.filter(t => t.id !== id);
+    saveAll();
+    renderTasks();
+  }
 }
 
 function selectTask(id) {
@@ -892,17 +921,15 @@ function renderTasks() {
   const list = document.getElementById('taskList');
   const empty = document.getElementById('emptyTasksMsg');
   const pending = tasks.filter(t => !t.done);
-  const done = tasks.filter(t => t.done);
-  const all = [...pending, ...done];
 
-  if (all.length === 0) {
+  if (pending.length === 0) {
     list.innerHTML = '';
     list.appendChild(empty);
     return;
   }
 
-  list.innerHTML = all.map(t => `
-    <div class="task-item ${t.done ? 'done' : ''} ${activeTaskId === t.id ? 'active' : ''}" onclick="selectTask(${t.id})">
+  list.innerHTML = pending.map(t => `
+    <div class="task-item ${activeTaskId === t.id ? 'active' : ''}" onclick="selectTask(${t.id})">
       <div class="task-check" onclick="event.stopPropagation();toggleTask(${t.id})"></div>
       <span class="task-text">${escHtml(t.text)}</span>
       ${t.pomos > 0 ? `<span class="task-pomos">🍅×${t.pomos}</span>` : ''}
@@ -1113,6 +1140,10 @@ function animateConfetti() {
 
 // ── Init ──
 renderAll();
+updateTimerUI();
+</script>
+</body>
+</html>
 updateTimerUI();
 </script>
 </body>
