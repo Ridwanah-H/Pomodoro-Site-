@@ -106,6 +106,36 @@
     gap: 0.5rem;
   }
 
+  /* ── Method toggle ── */
+  .method-toggle {
+    display: flex;
+    gap: 0.4rem;
+    margin-bottom: 0.7rem;
+    background: var(--bg2);
+    border-radius: 12px;
+    padding: 4px;
+  }
+
+  .method-btn {
+    flex: 1;
+    border: none;
+    background: transparent;
+    border-radius: 9px;
+    padding: 0.5rem 0.5rem;
+    font-family: 'Nunito', sans-serif;
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: var(--muted);
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .method-btn.active {
+    background: var(--warm);
+    color: white;
+    box-shadow: 0 2px 8px rgba(196,137,90,0.30);
+  }
+
   /* ── Timer ── */
   .timer-modes {
     display: flex;
@@ -470,7 +500,11 @@
   <!-- Timer -->
   <div class="card">
     <h2>⏱ Timer</h2>
-    <div class="timer-modes">
+    <div class="method-toggle">
+      <button class="method-btn active" id="methodPomodoro" onclick="setMethod('pomodoro')">🍅 Pomodoro</button>
+      <button class="method-btn" id="method5217" onclick="setMethod('5217')">⚡ 52/17</button>
+    </div>
+    <div class="timer-modes" id="timerModes">
       <button class="mode-btn active" onclick="setMode('focus')">Focus 25m</button>
       <button class="mode-btn" onclick="setMode('short')">Short 5m</button>
       <button class="mode-btn" onclick="setMode('long')">Long 15m</button>
@@ -545,9 +579,10 @@
 
 <script>
 // ── State ──
-const MODES = { focus: 25*60, short: 5*60, long: 15*60 };
+const MODES = { focus: 25*60, short: 5*60, long: 15*60, focus52: 52*60, break17: 17*60 };
 const CIRCUMFERENCE = 471;
 
+let method = 'pomodoro'; // 'pomodoro' or '5217'
 let mode = 'focus';
 let totalTime = MODES.focus;
 let timeLeft = totalTime;
@@ -586,16 +621,39 @@ function updateStreak() {
 }
 
 // ── Timer ──
+function setMethod(m) {
+  if (running) return;
+  method = m;
+  document.getElementById('methodPomodoro').classList.toggle('active', m === 'pomodoro');
+  document.getElementById('method5217').classList.toggle('active', m === '5217');
+
+  const modesEl = document.getElementById('timerModes');
+  if (m === 'pomodoro') {
+    modesEl.innerHTML = `
+      <button class="mode-btn active" onclick="setMode('focus')">Focus 25m</button>
+      <button class="mode-btn" onclick="setMode('short')">Short 5m</button>
+      <button class="mode-btn" onclick="setMode('long')">Long 15m</button>`;
+    setMode('focus');
+  } else {
+    modesEl.innerHTML = `
+      <button class="mode-btn active" onclick="setMode('focus52')">Focus 52m</button>
+      <button class="mode-btn" onclick="setMode('break17')">Break 17m</button>`;
+    setMode('focus52');
+  }
+}
+
 function setMode(m) {
   if (running) return;
   mode = m;
   totalTime = MODES[m];
   timeLeft = totalTime;
-  document.querySelectorAll('.mode-btn').forEach((b, i) => {
-    b.classList.toggle('active', ['focus','short','long'][i] === m);
+  document.querySelectorAll('.mode-btn').forEach(b => {
+    const match = b.getAttribute('onclick').includes(`'${m}'`);
+    b.classList.toggle('active', match);
   });
   updateTimerUI();
-  document.getElementById('timerLabel').textContent = m === 'focus' ? 'Ready to focus?' : m === 'short' ? 'Short break 🌿' : 'Long break ☕';
+  const labels = { focus: 'Ready to focus?', short: 'Short break 🌿', long: 'Long break ☕', focus52: 'Ready for a deep session? 🔥', break17: 'Earned break — rest well 🌿' };
+  document.getElementById('timerLabel').textContent = labels[m] || 'Ready?';
 }
 
 function toggleTimer() {
@@ -610,9 +668,9 @@ function startTimer() {
   running = true;
   document.getElementById('startBtn').textContent = 'Pause';
   interval = setInterval(tick, 1000);
-  if (mode === 'focus') {
+  if (mode === 'focus' || mode === 'focus52') {
     const t = tasks.find(t => t.id === activeTaskId);
-    document.getElementById('timerLabel').textContent = t ? `Focusing on "${t.text}" 🍅` : 'Focusing... 🍅';
+    document.getElementById('timerLabel').textContent = t ? `Focusing on "${t.text}" 🍅` : (mode === 'focus52' ? 'Deep focus... 🔥' : 'Focusing... 🍅');
   }
 }
 
@@ -629,7 +687,8 @@ function resetTimer() {
   timeLeft = totalTime;
   document.getElementById('startBtn').textContent = 'Start';
   updateTimerUI();
-  document.getElementById('timerLabel').textContent = mode === 'focus' ? 'Ready to focus?' : mode === 'short' ? 'Short break 🌿' : 'Long break ☕';
+  const labels = { focus: 'Ready to focus?', short: 'Short break 🌿', long: 'Long break ☕', focus52: 'Ready for a deep session? 🔥', break17: 'Earned break — rest well 🌿' };
+  document.getElementById('timerLabel').textContent = labels[mode] || 'Ready?';
 }
 
 function tick() {
@@ -662,9 +721,10 @@ function timerComplete() {
   running = false;
   document.getElementById('startBtn').textContent = 'Start';
 
-  if (mode === 'focus') {
+  if (mode === 'focus' || mode === 'focus52') {
+    const focusMinutes = mode === 'focus52' ? 52 : 25;
     stats.total++;
-    stats.focusMin += 25;
+    stats.focusMin += focusMinutes;
     todayPomos++;
     localStorage.setItem('cf_todayPomos', todayPomos);
     updateStreak();
