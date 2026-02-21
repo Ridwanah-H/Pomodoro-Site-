@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Welcome!</title>
+<title>Cozy Focus</title>
 <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,600;1,400&family=Nunito:wght@300;400;600&display=swap" rel="stylesheet">
 <style>
   :root {
@@ -540,7 +540,7 @@
 <body>
 
 <header>
-  <h1>🍵 Welcome! 🍵</h1>
+  <h1>🍵 Cozy Focus</h1>
   <p>one task at a time, one breath at a time</p>
   <div class="streak-bar">
     <div class="streak-pill">🔥 Streak <span id="streakCount">0</span> days</div>
@@ -655,6 +655,8 @@ let timeLeft = totalTime;
 let running = false;
 let interval = null;
 let activeTaskId = null;
+let startTimestamp = null;
+let remainingOnStart = null;
 
 // Load from localStorage
 let tasks = JSON.parse(localStorage.getItem('cf_tasks') || '[]');
@@ -732,8 +734,14 @@ function toggleTimer() {
 
 function startTimer() {
   running = true;
+  startTimestamp = Date.now();
+  remainingOnStart = timeLeft;
   document.getElementById('startBtn').textContent = 'Pause';
-  interval = setInterval(tick, 1000);
+  interval = setInterval(tick, 500);
+  // request notification permission
+  if ('Notification' in window && Notification.permission === 'default') {
+    Notification.requestPermission();
+  }
   if (mode === 'focus' || mode === 'focus52') {
     const t = tasks.find(t => t.id === activeTaskId);
     document.getElementById('timerLabel').textContent = t ? `Focusing on "${t.text}" 🌸` : (mode === 'focus52' ? 'Deep focus... 🔥' : 'Focusing... 🌸');
@@ -743,14 +751,20 @@ function startTimer() {
 function pauseTimer() {
   running = false;
   clearInterval(interval);
+  // save how much time is actually left based on real clock
+  const elapsed = Math.floor((Date.now() - startTimestamp) / 1000);
+  timeLeft = Math.max(0, remainingOnStart - elapsed);
   document.getElementById('startBtn').textContent = 'Resume';
   document.getElementById('timerLabel').textContent = 'Paused ☁️';
+  updateTimerUI();
 }
 
 function resetTimer() {
   running = false;
   clearInterval(interval);
   timeLeft = totalTime;
+  startTimestamp = null;
+  remainingOnStart = null;
   document.getElementById('startBtn').textContent = 'Start';
   updateTimerUI();
   const labels = { focus: 'Ready to focus?', short: 'Short break 🌿', long: 'Long break ☕', focus52: 'Ready for a deep session? 🔥', break17: 'Earned break — rest well 🌿' };
@@ -758,11 +772,12 @@ function resetTimer() {
 }
 
 function tick() {
+  const elapsed = Math.floor((Date.now() - startTimestamp) / 1000);
+  timeLeft = Math.max(0, remainingOnStart - elapsed);
   if (timeLeft <= 0) {
     timerComplete();
     return;
   }
-  timeLeft--;
   updateTimerUI();
 }
 
@@ -817,6 +832,9 @@ function timerComplete() {
     showToast('Session complete! Take a break.');
     playDone();
     launchConfetti();
+    if ('Notification' in window && Notification.permission === 'granted') {
+      new Notification('🌸 Cozy Focus', { body: 'Session complete! Time for a break.' });
+    }
     document.getElementById('timerLabel').textContent = 'Great work! 🌿';
   } else {
     showToast('☕ Break over! Ready to focus again?');
