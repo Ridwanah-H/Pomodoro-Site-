@@ -833,7 +833,7 @@ function timerComplete() {
     playDone();
     launchConfetti();
     if ('Notification' in window && Notification.permission === 'granted') {
-      new Notification('🌸 Cozy Focus', { body: 'Session complete! Time for a break.' });
+      new Notification('🌸 Focus Session', { body: 'Session complete! Time for a break.' });
     }
     document.getElementById('timerLabel').textContent = 'Great work! 🌿';
   } else {
